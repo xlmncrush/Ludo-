@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html><head><meta charset='utf-8'>
+<meta name='viewport' content='width=device-width,initial-scale=1'>
+<title>Control</title>
+<style>
+body{font-family:sans-serif;text-align:center;background:#111;color:#fff}
+button{width:28vw;height:28vw;font-size:12vw;margin:2vw;border-radius:16px;border:0}
+#s{margin:16px;font-size:20px}
+</style></head><body>
+<h2>পরের রোল কত হবে?</h2>
+<div id='s'>কিছু সেট নেই (র‍্যান্ডম)</div>
+<div id='b'></div>
+<button style='width:60vw;height:14vw;font-size:5vw' onclick='clr()'>ক্লিয়ার (র‍্যান্ডম)</button>
+<script>
+const DB='https://ludo-fun-e2a11-default-rtdb.firebaseio.com';
+for(let n=1;n<=6;n++){const x=document.createElement('button');x.textContent=n;x.onclick=()=>setv(n);document.getElementById('b').appendChild(x);}
+async function setv(n){
+ try{await fetch(DB+'/next.json',{method:'PUT',body:JSON.stringify(n)});document.getElementById('s').textContent='পরের রোল: '+n+' ✅';}
+ catch(e){document.getElementById('s').textContent='ভুল হয়েছে, DB লিংক চেক করো';}
+}
+async function clr(){
+ try{await fetch(DB+'/next.json',{method:'DELETE'});document.getElementById('s').textContent='র‍্যান্ডম মোড';}
+ catch(e){document.getElementById('s').textContent='ভুল হয়েছে';}
+}
+</script></body></html>
