@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <title>HACKED - Ludo Control</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      min-height: 100%;
+      background: #000000;
+      color: #e2ffe8;
+      font-family: 'Courier New', Consolas, monospace, system-ui;
+      text-align: center;
+      overflow-x: hidden;
+    }
+
+    /* Continuously running Matrix Digital Rain Canvas */
+    #matrixBg {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .wrap {
+      position: relative;
+      z-index: 2;
+      max-width: 370px;
+      margin: 0 auto;
+      padding: 16px 12px 28px;
+    }
+
+    .hacked-title {
+      margin: 4px 0 12px;
+      font-size: 32px;
+      font-weight: 900;
+      letter-spacing: 6px;
+      color: #00ff41;
+      text-shadow: 0 0 10px #00ff41, 0 0 22px #00aa2a;
+      animation: glitchPulse 2.4s infinite ease-in-out;
+    }
+    @keyframes glitchPulse {
+      0%, 100% { text-shadow: 0 0 10px #00ff41, 0 0 22px #00aa2a; }
+      50% { text-shadow: 0 0 16px #5cff85, 0 0 30px #00ff41; }
+    }
+
+    /* Glassy dark-matrix panels */
+    .panel-glass {
+      background: rgba(0, 14, 5, 0.84);
+      border: 1.5px solid rgba(0, 255, 65, 0.45);
+      border-radius: 14px;
+      padding: 14px 12px;
+      box-shadow: 0 0 20px rgba(0, 255, 65, 0.14);
+      backdrop-filter: blur(2px);
+    }
+
+    /* Lock Screen */
+    #lockScreen {
+      margin-top: 70px;
+    }
+    .lock-sub {
+      font-size: 13px;
+      color: #86efac;
+      margin-bottom: 14px;
+      font-weight: 700;
+    }
+    .pass-input {
+      width: 100%;
+      background: rgba(0, 22, 8, 0.92);
+      color: #00ff41;
+      border: 1.5px solid #00ff41;
+      border-radius: 10px;
+      padding: 12px;
+      font-size: 18px;
+      font-weight: 900;
+      text-align: center;
+      letter-spacing: 3px;
+      outline: none;
+      margin-bottom: 12px;
+    }
+    .unlock-btn {
+      width: 100%;
+      height: 48px;
+      border: 0;
+      border-radius: 10px;
+      background: linear-gradient(180deg, #00e639 0%, #008f24 100%);
+      color: #001405;
+      font-size: 16px;
+      font-weight: 900;
+      letter-spacing: 1px;
+      cursor: pointer;
+      box-shadow: 0 0 14px rgba(0, 255, 65, 0.45);
+    }
+    #lockErr {
+      color: #ff4d4d;
+      font-size: 12.5px;
+      font-weight: 800;
+      margin-top: 10px;
+      min-height: 18px;
+    }
+
+    /* Main Controller (hidden until unlocked) */
+    #mainApp { display: none; }
+
+    /* 3-Tab Bar */
+    .tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 5px;
+      background: rgba(0, 18, 6, 0.9);
+      padding: 5px;
+      border-radius: 12px;
+      border: 1px solid rgba(0, 255, 65, 0.4);
+      margin-bottom: 12px;
+    }
+    .tab-btn {
+      padding: 9px 4px;
+      border: 0;
+      border-radius: 8px;
+      background: transparent;
+      color: #6ee7b7;
+      font-size: 12.5px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+    .tab-btn.active {
+      background: linear-gradient(180deg, #00ff41 0%, #00aa2a 100%);
+      color: #001405;
+      box-shadow: 0 0 10px rgba(0, 255, 65, 0.5);
+    }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    .row {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin: 0 auto 10px;
+    }
+    input, select {
+      background: rgba(0, 20, 7, 0.9);
+      color: #00ff41;
+      border: 1.5px solid rgba(0, 255, 65, 0.45);
+      border-radius: 10px;
+      padding: 10px 11px;
+      font-size: 14px;
+      font-weight: 800;
+      outline: none;
+    }
+    input { flex: 1; min-width: 0; }
+    input:focus, select:focus { border-color: #00ff41; box-shadow: 0 0 8px rgba(0, 255, 65, 0.35); }
+    input::placeholder { color: rgba(134, 239, 172, 0.5); }
+
+    .turn-banner {
+      background: rgba(0, 25, 10, 0.9);
+      border: 1px solid rgba(0, 255, 65, 0.45);
+      border-radius: 10px;
+      padding: 8px 10px;
+      font-size: 12.5px;
+      font-weight: 800;
+      color: #bbf7d0;
+      margin-bottom: 10px;
+      display: none;
+    }
+    .turn-banner.show { display: block; }
+
+    #s {
+      margin: 6px auto 12px;
+      font-size: 15px;
+      font-weight: 800;
+      color: #4ade80;
+      min-height: 22px;
+    }
+    #b {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin: 0 auto 12px;
+    }
+    #b button {
+      height: 76px;
+      font-size: 34px;
+      font-weight: 900;
+      border-radius: 14px;
+      border: 1.5px solid #00ff41;
+      background: rgba(0, 26, 9, 0.92);
+      color: #00ff41;
+      box-shadow: 0 4px 0 #005917, 0 0 10px rgba(0, 255, 65, 0.22);
+      cursor: pointer;
+    }
+    #b button:active {
+      transform: translateY(3px);
+      box-shadow: 0 1px 0 #005917;
+    }
+    .clr-btn {
+      width: 100%;
+      height: 46px;
+      font-size: 14.5px;
+      font-weight: 900;
+      border-radius: 12px;
+      border: 1px solid #ef4444;
+      background: rgba(127, 29, 29, 0.9);
+      color: #fff;
+      box-shadow: 0 3px 0 #450a0a;
+      cursor: pointer;
+    }
+    .clr-btn:active { transform: translateY(2px); }
+
+    .hint {
+      margin-top: 10px;
+      font-size: 11.5px;
+      color: #86efac;
+      opacity: 0.85;
+      line-height: 1.45;
+    }
+
+    /* Power Mode */
+    .power-card {
+      background: rgba(0, 20, 8, 0.88);
+      border: 1.5px solid rgba(0, 255, 65, 0.35);
+      border-radius: 12px;
+      padding: 10px 11px;
+      margin-bottom: 9px;
+      text-align: left;
+    }
+    .power-title { font-size: 13.5px; font-weight: 900; color: #00ff41; margin-bottom: 3px; }
+    .power-desc { font-size: 11px; color: #bbf7d0; opacity: 0.8; margin-bottom: 8px; line-height: 1.35; }
+    .color-toggle-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; }
+    .c-toggle {
+      padding: 9px 4px;
+      border-radius: 9px;
+      border: 2px solid transparent;
+      font-size: 12px;
+      font-weight: 900;
+      color: #fff;
+      opacity: 0.45;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .c-toggle.on {
+      opacity: 1;
+      border-color: #00ff41;
+      box-shadow: 0 0 12px rgba(0, 255, 65, 0.7);
+      transform: scale(1.04);
+    }
+
+    /* Live Rooms Tab */
+    .rooms-header { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-bottom: 10px; }
+    .rooms-actions { display: flex; gap: 6px; }
+    .refresh-btn {
+      background: rgba(0, 30, 10, 0.9);
+      color: #00ff41;
+      border: 1px solid #00ff41;
+      border-radius: 8px;
+      padding: 6px 10px;
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+    .clear-rooms-btn {
+      background: rgba(80, 10, 10, 0.9);
+      color: #fca5a5;
+      border: 1px solid #ef4444;
+      border-radius: 8px;
+      padding: 6px 10px;
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+    .room-card {
+      background: rgba(0, 18, 6, 0.9);
+      border: 1.5px solid rgba(0, 255, 65, 0.35);
+      border-radius: 12px;
+      padding: 10px 11px;
+      margin-bottom: 10px;
+      text-align: left;
+    }
+    .room-card.selected { border-color: #00ff41; box-shadow: 0 0 12px rgba(0, 255, 65, 0.3); }
+    .room-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; gap: 6px; }
+    .room-code-badge {
+      background: #004d16;
+      color: #00ff41;
+      border: 1px solid #00ff41;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+    .room-meta { font-size: 11px; color: #86efac; font-weight: 700; flex: 1; cursor: pointer; }
+    .del-room-btn {
+      background: #7f1d1d;
+      color: #fecaca;
+      border: 1px solid #ef4444;
+      border-radius: 6px;
+      width: 24px;
+      height: 24px;
+      font-size: 12px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+    .player-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .p-chip {
+      border: 1.5px solid rgba(255,255,255,0.25);
+      border-radius: 8px;
+      padding: 5px 8px;
+      font-size: 11.5px;
+      font-weight: 800;
+      color: #fff;
+      cursor: pointer;
+    }
+    .p-chip.turn-now { outline: 2px solid #00ff41; box-shadow: 0 0 8px rgba(0, 255, 65, 0.7); }
+    .c-blue { background: #2563eb; }
+    .c-red { background: #dc2626; }
+    .c-green { background: #16a34a; }
+    .c-yellow { background: #ca8a04; }
+  </style>
+</head>
+<body>
+  <canvas id="matrixBg"></canvas>
+
+  <div class="wrap">
+    <div class="hacked-title">HACKED</div>
+
+    <!-- PASSWORD LOCK SCREEN -->
+    <div id="lockScreen" class="panel-glass">
+      <div class="lock-sub">SYSTEM LOCKED • ENTER PASSWORD</div>
+      <input id="passInput" type="password" class="pass-input" placeholder="PASSWORD" onkeydown="if(event.key==='Enter') unlockApp()" />
+      <button class="unlock-btn" onclick="unlockApp()">ACCESS CONTROLLER</button>
+      <div id="lockErr"></div>
+    </div>
+
+    <!-- MAIN CONTROLLER -->
+    <div id="mainApp" class="panel-glass">
+      <div class="tabs">
+        <button class="tab-btn active" id="tabBtnControl" onclick="switchTab('control')">🎮 কন্ট্রোল</button>
+        <button class="tab-btn" id="tabBtnPower" onclick="switchTab('power')">⚡ পাওয়ার</button>
+        <button class="tab-btn" id="tabBtnRooms" onclick="switchTab('rooms')">🏠 রুমস</button>
+      </div>
+
+      <!-- TAB 1: DICE CONTROL -->
+      <div id="tabControl" class="tab-panel active">
+        <div class="row" style="margin-bottom:8px;">
+          <button id="gameTypeLudo" onclick="setControlGameType('ludo')" style="flex:1;padding:7px;border-radius:8px;border:1.5px solid #00ff41;background:#004d16;color:#00ff41;font-weight:900;font-size:12px;cursor:pointer;">🎲 LUDO</button>
+          <button id="gameTypeSnakes" onclick="setControlGameType('snakes')" style="flex:1;padding:7px;border-radius:8px;border:1.5px solid rgba(0,255,65,0.35);background:rgba(0,20,7,0.9);color:#86efac;font-weight:900;font-size:12px;cursor:pointer;">🐍 SNAKES</button>
+        </div>
+        <div class="row">
+          <input id="roomInput" type="text" maxlength="6" placeholder="Room # (খালি = সব রুম)" oninput="syncRoomInputs(this.value)" />
+          <select id="colorInput" onchange="onTargetChange()">
+            <option value="">All</option>
+            <option value="blue">Blue</option>
+            <option value="red">Red</option>
+            <option value="green">Green</option>
+            <option value="yellow">Yellow</option>
+            <option value="orange">Orange (5P)</option>
+            <option value="purple">Purple (6P)</option>
+          </select>
+        </div>
+
+        <div id="turnBanner" class="turn-banner"></div>
+        <div id="s">কিছু সেট নেই (র্যান্ডম)</div>
+        <div id="b"></div>
+        <button class="clr-btn" onclick="clr()">সব ক্লিয়ার (র্যান্ডম)</button>
+
+        <p class="hint">
+          • নির্দিষ্ট কালার (যেমন Green) দিলে ঠিক Green-এর টার্ন এলেই ওই সংখ্যা উঠবে।<br/>
+          • অ্যাক্সেস পাসওয়ার্ড: কোডের `ACCESS_PASS` ভেরিয়েবল থেকে বদলাতে পারবেন।
+        </p>
+      </div>
+
+      <!-- TAB 2: POWER MODE -->
+      <div id="tabPower" class="tab-panel">
+        <div class="row">
+          <input id="powerRoomInput" type="text" maxlength="6" placeholder="Room # (খালি = গ্লোবাল)" oninput="syncRoomInputs(this.value)" />
+          <button class="refresh-btn" onclick="loadPowerState()">🔄</button>
+        </div>
+
+        <div id="powerStatus" style="font-size:12px;font-weight:800;color:#4ade80;margin-bottom:9px;">
+          অফ না করা পর্যন্ত এই পাওয়ার চালু থাকবে
+        </div>
+
+        <div class="power-card">
+          <div class="power-title">🎯 গুটি খাওয়া পড়ুক (Target Mode)</div>
+          <div class="power-desc">যে কালার অন করবেন, এনিমি টিম (টিমমেট নয়) তার গুটি কাটার মতো ডাইস পাবে।</div>
+          <div class="color-toggle-grid">
+            <button class="c-toggle c-blue" id="prey-blue" onclick="togglePower('preyColors','blue')">Blue</button>
+            <button class="c-toggle c-red" id="prey-red" onclick="togglePower('preyColors','red')">Red</button>
+            <button class="c-toggle c-green" id="prey-green" onclick="togglePower('preyColors','green')">Green</button>
+            <button class="c-toggle c-yellow" id="prey-yellow" onclick="togglePower('preyColors','yellow')">Yellow</button>
+          </div>
+        </div>
+
+        <div class="power-card">
+          <div class="power-title">🔥 ভালো ডাইস মোড (6, 5, 4 বেশি)</div>
+          <div class="power-desc">যে কালার অন করবেন, তার ডাইসে ৬, ৫, ৪ অনেক বেশি উঠবে।</div>
+          <div class="color-toggle-grid">
+            <button class="c-toggle c-blue" id="lucky-blue" onclick="togglePower('luckyColors','blue')">Blue</button>
+            <button class="c-toggle c-red" id="lucky-red" onclick="togglePower('luckyColors','red')">Red</button>
+            <button class="c-toggle c-green" id="lucky-green" onclick="togglePower('luckyColors','green')">Green</button>
+            <button class="c-toggle c-yellow" id="lucky-yellow" onclick="togglePower('luckyColors','yellow')">Yellow</button>
+          </div>
+        </div>
+
+        <div class="power-card">
+          <div class="power-title">🛡️ সেভ মোড (কেউ কাটতে পারবে না)</div>
+          <div class="power-desc">আশেপাশে থাকা এনিমির ডাইসে কাটার সংখ্যা উঠবে না এবং গুটিও কাটা যাবে না।</div>
+          <div class="color-toggle-grid">
+            <button class="c-toggle c-blue" id="shield-blue" onclick="togglePower('shieldColors','blue')">Blue</button>
+            <button class="c-toggle c-red" id="shield-red" onclick="togglePower('shieldColors','red')">Red</button>
+            <button class="c-toggle c-green" id="shield-green" onclick="togglePower('shieldColors','green')">Green</button>
+            <button class="c-toggle c-yellow" id="shield-yellow" onclick="togglePower('shieldColors','yellow')">Yellow</button>
+          </div>
+        </div>
+
+        <button class="clr-btn" onclick="resetPower()">সব পাওয়ার বন্ধ করুন</button>
+      </div>
+
+      <!-- TAB 3: LIVE ROOMS -->
+      <div id="tabRooms" class="tab-panel">
+        <div class="rooms-header">
+          <span style="font-size:13px;font-weight:800;color:#86efac;">লাইভ রুম:</span>
+          <div class="rooms-actions">
+            <button class="refresh-btn" onclick="loadActiveRooms()">🔄 রিফ্রেশ</button>
+            <button class="clear-rooms-btn" onclick="clearAllRooms()">🗑️ সব ক্লিয়ার</button>
+          </div>
+        </div>
+        <div id="roomsList">
+          <p class="hint">লোড হচ্ছে...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ==================== MATRIX DIGITAL RAIN ANIMATION ====================
+    (function initMatrix() {
+      const canvas = document.getElementById('matrixBg');
+      const ctx = canvas.getContext('2d');
+      const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ$#@%&*+=<>[]{}アイウエオカキクケコ';
+      const fontSize = 15;
+      let columns = 0;
+      let drops = [];
+
+      function resize() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        columns = Math.floor(canvas.width / fontSize);
+        drops = Array.from({ length: columns }, () => Math.random() * -30);
+      }
+      resize();
+      window.addEventListener('resize', resize);
+
+      function draw() {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.08)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.font = 'bold ' + fontSize + 'px monospace';
+        for (let i = 0; i < drops.length; i++) {
+          const text = chars[Math.floor(Math.random() * chars.length)];
+          ctx.fillStyle = Math.random() > 0.9 ? '#c8ffd4' : '#00ff41';
+          ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+          if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+            drops[i] = 0;
+          }
+          drops[i]++;
+        }
+        requestAnimationFrame(draw);
+      }
+      draw();
+    })();
+
+    // ==================== PASSWORD GATE ====================
+    const ACCESS_PASS = '9898';
+
+    function unlockApp() {
+      const val = document.getElementById('passInput').value.trim();
+      if (val === ACCESS_PASS) {
+        document.getElementById('lockScreen').style.display = 'none';
+        document.getElementById('mainApp').style.display = 'block';
+        bannerTimer = setInterval(refreshSelectedRoomBanner, 1800);
+      } else {
+        document.getElementById('lockErr').textContent = '❌ ভুল পাসওয়ার্ড! আবার চেষ্টা করো';
+      }
+    }
+
+    // ==================== CONTROLLER LOGIC ====================
+    const DB = 'https://my-dice-game-ec921-default-rtdb.firebaseio.com';
+    let roomsTimer = null;
+    let bannerTimer = null;
+    let powerState = { preyColors: {}, luckyColors: {}, shieldColors: {} };
+    let bc = null;
+    try { bc = new BroadcastChannel('ludo_king_room_ctrl'); } catch (e) {}
+
+    function syncRoomInputs(val) {
+      document.getElementById('roomInput').value = val;
+      document.getElementById('powerRoomInput').value = val;
+      refreshSelectedRoomBanner();
+      if (document.getElementById('tabPower').classList.contains('active')) {
+        loadPowerState();
+      }
+    }
+
+    function switchTab(tab) {
+      document.getElementById('tabBtnControl').classList.toggle('active', tab === 'control');
+      document.getElementById('tabBtnPower').classList.toggle('active', tab === 'power');
+      document.getElementById('tabBtnRooms').classList.toggle('active', tab === 'rooms');
+      document.getElementById('tabControl').classList.toggle('active', tab === 'control');
+      document.getElementById('tabPower').classList.toggle('active', tab === 'power');
+      document.getElementById('tabRooms').classList.toggle('active', tab === 'rooms');
+
+      clearInterval(roomsTimer);
+      clearInterval(bannerTimer);
+      if (tab === 'rooms') {
+        loadActiveRooms();
+        roomsTimer = setInterval(loadActiveRooms, 2000);
+      } else if (tab === 'power') {
+        loadPowerState();
+      } else {
+        refreshSelectedRoomBanner();
+        bannerTimer = setInterval(refreshSelectedRoomBanner, 1800);
+      }
+    }
+
+    let controlGameType = 'ludo';
+
+    function setControlGameType(gt) {
+      controlGameType = gt;
+      const bL = document.getElementById('gameTypeLudo');
+      const bS = document.getElementById('gameTypeSnakes');
+      bL.style.background = gt === 'ludo' ? '#004d16' : 'rgba(0,20,7,0.9)';
+      bL.style.color = gt === 'ludo' ? '#00ff41' : '#86efac';
+      bL.style.borderColor = gt === 'ludo' ? '#00ff41' : 'rgba(0,255,65,0.35)';
+      bS.style.background = gt === 'snakes' ? '#004d16' : 'rgba(0,20,7,0.9)';
+      bS.style.color = gt === 'snakes' ? '#00ff41' : '#86efac';
+      bS.style.borderColor = gt === 'snakes' ? '#00ff41' : 'rgba(0,255,65,0.35)';
+      document.getElementById('roomInput').style.display = gt === 'snakes' ? 'none' : 'block';
+      document.getElementById('s').textContent = gt === 'snakes' ? '🐍 Snakes ডাইস কন্ট্রোল মোড' : '🎲 Ludo ডাইস কন্ট্রোল মোড';
+    }
+
+    function getTargetPath() {
+      const color = document.getElementById('colorInput').value;
+      if (controlGameType === 'snakes') {
+        return color ? `${DB}/snakes/players/${color}.json` : `${DB}/snakes/next.json`;
+      }
+      const room = document.getElementById('roomInput').value.trim();
+      if (room && color) return `${DB}/rooms/${room}/players/${color}.json`;
+      if (room) return `${DB}/rooms/${room}/next.json`;
+      if (color) return `${DB}/players/${color}.json`;
+      return `${DB}/next.json`;
+    }
+
+    function getPowerPath() {
+      const room = document.getElementById('powerRoomInput').value.trim();
+      return room ? `${DB}/rooms/${room}/power.json` : `${DB}/power.json`;
+    }
+
+    for (let n = 1; n <= 6; n++) {
+      const x = document.createElement('button');
+      x.textContent = n;
+      x.onclick = () => setv(n);
+      document.getElementById('b').appendChild(x);
+    }
+
+    async function setv(n) {
+      const url = getTargetPath();
+      const room = document.getElementById('roomInput').value.trim();
+      const color = document.getElementById('colorInput').value;
+      const tag = room
+        ? `#${room}${color ? ' (' + color.toUpperCase() + ')' : ' (All)'}`
+        : (color ? `Global (${color.toUpperCase()})` : 'Global (All)');
+      const payload = { val: n, id: Date.now() + '_' + Math.random().toString(36).slice(2, 7) };
+
+      if (bc && room && color) {
+        try { bc.postMessage({ type: 'SET_DICE', roomCode: room, color, val: n }); } catch (e) {}
+      }
+
+      try {
+        if (color) {
+          await Promise.all([
+            fetch(`${DB}/next.json`, { method: 'DELETE' }).catch(() => {}),
+            room ? fetch(`${DB}/rooms/${room}/next.json`, { method: 'DELETE' }).catch(() => {}) : Promise.resolve()
+          ]);
+        }
+        const res = await fetch(url, { method: 'PUT', body: JSON.stringify(payload) });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        document.getElementById('s').textContent = `${tag} পরের রোল: ${n} ✅`;
+      } catch (e) {
+        document.getElementById('s').textContent = 'সেট হয়নি! Firebase Rules বা নেটওয়ার্ক চেক করো';
+      }
+    }
+
+    async function clr() {
+      const room = document.getElementById('roomInput').value.trim();
+      const dels = [
+        fetch(`${DB}/next.json`, { method: 'DELETE' }),
+        fetch(`${DB}/players.json`, { method: 'DELETE' }),
+        fetch(`${DB}/snakes/next.json`, { method: 'DELETE' }),
+        fetch(`${DB}/snakes/players.json`, { method: 'DELETE' })
+      ];
+      if (room) {
+        dels.push(fetch(`${DB}/rooms/${room}/next.json`, { method: 'DELETE' }));
+        dels.push(fetch(`${DB}/rooms/${room}/players.json`, { method: 'DELETE' }));
+      }
+      try {
+        await Promise.all(dels);
+        document.getElementById('s').textContent = 'সব ক্লিয়ার — র্যান্ডম মোড ✅';
+      } catch (e) {
+        document.getElementById('s').textContent = 'ক্লিয়ার করতে সমস্যা হয়েছে';
+      }
+    }
+
+    function renderPowerUI(statusOverride = null) {
+      ['blue', 'red', 'green', 'yellow'].forEach(c => {
+        document.getElementById('prey-' + c).classList.toggle('on', !!(powerState.preyColors && powerState.preyColors[c]));
+        document.getElementById('lucky-' + c).classList.toggle('on', !!(powerState.luckyColors && powerState.luckyColors[c]));
+        document.getElementById('shield-' + c).classList.toggle('on', !!(powerState.shieldColors && powerState.shieldColors[c]));
+      });
+      if (statusOverride) {
+        document.getElementById('powerStatus').textContent = statusOverride;
+        return;
+      }
+      const room = document.getElementById('powerRoomInput').value.trim();
+      document.getElementById('powerStatus').textContent = room
+        ? `রুম #${room}-এর পাওয়ার (অফ না করা পর্যন্ত চলবে)`
+        : 'গ্লোবাল পাওয়ার — সব রুম (অফ না করা পর্যন্ত চলবে)';
+    }
+
+    async function loadPowerState() {
+      try {
+        const res = await fetch(`${getPowerPath()}?_=${Date.now()}`, { cache: 'no-store' });
+        const d = res.ok ? await res.json() : null;
+        powerState = (d && typeof d === 'object')
+          ? { preyColors: d.preyColors || {}, luckyColors: d.luckyColors || {}, shieldColors: d.shieldColors || {} }
+          : { preyColors: {}, luckyColors: {}, shieldColors: {} };
+      } catch (e) {}
+      renderPowerUI();
+    }
+
+    async function togglePower(group, color) {
+      if (!powerState[group]) powerState[group] = {};
+      powerState[group][color] = !powerState[group][color];
+      renderPowerUI('সেভ হচ্ছে...');
+      if (bc) {
+        try { bc.postMessage({ type: 'SET_POWER', power: powerState }); } catch (e) {}
+      }
+      try {
+        const res = await fetch(getPowerPath(), { method: 'PUT', body: JSON.stringify(powerState) });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        renderPowerUI();
+      } catch (e) {
+        renderPowerUI('❌ সেভ হয়নি! নেটওয়ার্ক চেক করো');
+      }
+    }
+
+    async function resetPower() {
+      powerState = { preyColors: {}, luckyColors: {}, shieldColors: {} };
+      renderPowerUI('সব পাওয়ার বন্ধ করা হচ্ছে...');
+      if (bc) {
+        try { bc.postMessage({ type: 'SET_POWER', power: powerState }); } catch (e) {}
+      }
+      const room = document.getElementById('powerRoomInput').value.trim();
+      try {
+        await Promise.all([
+          fetch(`${DB}/power.json`, { method: 'DELETE' }),
+          room ? fetch(`${DB}/rooms/${room}/power.json`, { method: 'DELETE' }) : Promise.resolve()
+        ]);
+        renderPowerUI('সব পাওয়ার বন্ধ করা হয়েছে ✅');
+      } catch (e) {
+        renderPowerUI('❌ বন্ধ করতে সমস্যা হয়েছে');
+      }
+    }
+
+    function onTargetChange() {
+      refreshSelectedRoomBanner();
+    }
+
+    async function refreshSelectedRoomBanner() {
+      const room = document.getElementById('roomInput').value.trim();
+      const banner = document.getElementById('turnBanner');
+      if (!room) {
+        banner.classList.remove('show');
+        return;
+      }
+      try {
+        const res = await fetch(`${DB}/rooms/${room}/state.json?_=${Date.now()}`, { cache: 'no-store' });
+        const st = res.ok ? await res.json() : null;
+        if (st && Array.isArray(st.players) && st.players[st.turnIdx]) {
+          const cur = st.players[st.turnIdx];
+          banner.innerHTML = `রুম #${room} (${st.mode || 'Classic'}) • টার্ন: <span style="color:#00ff41;">${cur.name} (${cur.color.toUpperCase()})</span>`;
+          banner.classList.add('show');
+        } else {
+          banner.classList.remove('show');
+        }
+      } catch (e) {
+        banner.classList.remove('show');
+      }
+    }
+
+    function selectRoomAndColor(roomCode, color = '') {
+      syncRoomInputs(roomCode);
+      document.getElementById('colorInput').value = color;
+      document.getElementById('s').textContent = `সিলেক্টেড: #${roomCode}${color ? ' (' + color.toUpperCase() + ')' : ' (All)'}`;
+      switchTab('control');
+    }
+
+    async function deleteRoom(roomCode, ev) {
+      if (ev) ev.stopPropagation();
+      try {
+        await fetch(`${DB}/rooms/${roomCode}.json`, { method: 'DELETE' });
+        if (document.getElementById('roomInput').value.trim() === roomCode) {
+          syncRoomInputs('');
+          document.getElementById('turnBanner').classList.remove('show');
+        }
+        loadActiveRooms();
+      } catch (e) {}
+    }
+
+    async function clearAllRooms() {
+      try {
+        await fetch(`${DB}/rooms.json`, { method: 'DELETE' });
+        syncRoomInputs('');
+        document.getElementById('turnBanner').classList.remove('show');
+        loadActiveRooms();
+      } catch (e) {}
+    }
+
+    async function loadActiveRooms() {
+      const listEl = document.getElementById('roomsList');
+      try {
+        const res = await fetch(`${DB}/rooms.json?_=${Date.now()}`, { cache: 'no-store' });
+        const data = res.ok ? await res.json() : null;
+        if (!data || typeof data !== 'object') {
+          listEl.innerHTML = '<p class="hint">এই মুহূর্তে কোনো লাইভ রুম পাওয়া যায়নি।</p>';
+          return;
+        }
+
+        const currentRoom = document.getElementById('roomInput').value.trim();
+        const entries = Object.entries(data)
+          .filter(([, v]) => v && v.state && Array.isArray(v.state.players) && v.state.phase !== 'OVER')
+          .sort((a, b) => (b[1].state.updatedAt || 0) - (a[1].state.updatedAt || 0));
+
+        if (!entries.length) {
+          listEl.innerHTML = '<p class="hint">এই মুহূর্তে কোনো অ্যাক্টিভ ম্যাচ চলছে না।</p>';
+          return;
+        }
+
+        listEl.innerHTML = entries.map(([code, obj]) => {
+          const st = obj.state;
+          const curColor = st.players[st.turnIdx] ? st.players[st.turnIdx].color : '';
+          const chips = st.players.map(p => `
+            <button class="p-chip c-${p.color} ${p.color === curColor ? 'turn-now' : ''}"
+                    onclick="selectRoomAndColor('${code}', '${p.color}')">
+              ${p.color === curColor ? '🎲 ' : ''}${p.name} (${p.color.toUpperCase()})
+            </button>
+          `).join('');
+          return `
+            <div class="room-card ${code === currentRoom ? 'selected' : ''}">
+              <div class="room-top">
+                <span class="room-code-badge" onclick="selectRoomAndColor('${code}', '')">#${code}</span>
+                <span class="room-meta" onclick="selectRoomAndColor('${code}', '')">${st.source || ''} • ${st.mode || 'Classic'} (${st.playerCount}P)</span>
+                <button class="del-room-btn" title="রুম ডিলিট" onclick="deleteRoom('${code}', event)">✕</button>
+              </div>
+              <div class="player-chips">${chips}</div>
+            </div>
+          `;
+        }).join('');
+      } catch (e) {
+        listEl.innerHTML = '<p class="hint">রুম লোড করতে সমস্যা হয়েছে, আবার রিফ্রেশ করুন।</p>';
+      }
+    }
+  </script>
+</body>
+</html>
